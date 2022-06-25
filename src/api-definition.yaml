@@ -1,0 +1,256 @@
+openapi: "3.0.1"
+info:
+  title: "terraform-registry"
+  version: "v1.0"
+paths:
+  /.well-known/terraform.json:
+    get:
+      summary: Discovery process
+      description: |
+        Returns a json response to implement discovery process by Terraform
+        The returned JSON contains the paths for each API versions. Here we implement only the v1.
+        See more in https://www.terraform.io/internals/remote-service-discovery
+      responses:
+        200:
+          description: sends a simple json for discovery process
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/TerraformNativeServiceIdentifiers"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: 2.0
+        uri:
+           arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${tf_registry_discovery}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "AWS_PROXY"
+
+  # TODO Create new module
+
+  /modules/{namespace}/{name}/{provider}/versions:
+    get:
+      summary: List module versions
+      description: |
+        Returns the available versions for a given fully-qualified module.
+        This is required by Terraform client to get the modules.
+        See more in https://www.terraform.io/internals/module-registry-protocol#list-available-versions-for-a-specific-module
+      parameters:
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/name"
+        - $ref: "#/components/parameters/provider"
+      responses:
+        "200":
+          $ref: "#/components/responses/ReturnedVersions"
+        "418":
+          $ref: "#/components/responses/Invalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/Invalid"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: 2.0
+        uri:
+           arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${tf_registry_modules_version}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "AWS_PROXY"
+
+  /modules/{namespace}/{name}/{provider}/{version}/download:
+    get:
+      summary: Download module
+      description: |
+        This does not actually download the module tarball, but sends a link to the tarball.
+        The tarball could be hosted in another domain tha the API. Not the case here.
+        See more in https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+      parameters:
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/name"
+        - $ref: "#/components/parameters/provider"
+        - $ref: "#/components/parameters/version"
+      responses:
+        "204":
+          description: Returns the URL to download the binary
+          headers:
+            X-Terraform-Get:
+              description: URL to download the module tarball
+              schema:
+                type: string
+        "418":
+          $ref: "#/components/responses/Invalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: 2.0
+        uri:
+           arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${tf_registry_modules_download}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "AWS_PROXY"
+
+  /modules/{namespace}/{name}/{provider}/{version}/create:
+    get:
+      summary: Download module
+      description: |
+        This does not actually download the module tarball, but sends a link to the tarball.
+        The tarball could be hosted in another domain tha the API. Not the case here.
+        See more in https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+      parameters:
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/name"
+        - $ref: "#/components/parameters/provider"
+        - $ref: "#/components/parameters/version"
+      responses:
+        "204":
+          description: Returns the URL to download the binary
+          headers:
+            X-Terraform-Get:
+              description: URL to download the module tarball
+              schema:
+                type: string
+        "418":
+          $ref: "#/components/responses/Invalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: 2.0
+        uri:
+           arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${tf_registry_modules_version}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "AWS_PROXY"
+
+  ## TODO
+  # List Modules
+  # Search Modules
+  # List Available Version for a Specific Module
+  # List Latest Version of Module for All Providers
+  # Latest Version for a Specific Module Provider
+  # Download the Latest Version of a Module
+components:
+  parameters:
+    namespace:
+      name: namespace
+      in: path
+      description: unique on a particular hostname, that can contain one or more modules that are somehow related
+      required: true
+      schema:
+        type: string
+    name:
+      name: name
+      in: path
+      description: module name
+      required: true
+      schema:
+        type: string
+    provider:
+      name: provider
+      in: path
+      description: remote system that the module is primarily written to target (aws, gcp, ...)
+      required: true
+      schema:
+        type: string
+    version:
+      name: version
+      in: path
+      description: version of the module
+      required: true
+      schema:
+        type: string
+    source:
+      name: module-source
+      in: header
+      description: code URL of the module
+      required: false
+      schema:
+        type: string
+
+
+
+  responses:
+    NotFound:
+      description: Module not found
+
+    Invalid:
+      description: Invalid request
+
+    ReturnedVersions:
+      description: list of versions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ModuleRegistry"
+
+    ReturnedModule:
+      description: details of the latest module
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ModuleDetails"
+
+  schemas:
+
+
+    ModuleRegistry:
+      type: object
+      properties:
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/Module"
+
+    ModuleVersion:
+      type: object
+      properties:
+        version:
+          type: string
+
+    Module:
+      type: object
+      properties:
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleVersion"
+    ModuleDetails:
+      type: object
+      properties:
+        namespace:
+          type: string
+        name:
+          type: string
+        version:
+          type: string
+        provider:
+          type: string
+        source:
+          type: string
+        published_at:
+          type: string
+        versions:
+          type: array
+          items:
+            type: string
+    TerraformNativeServiceIdentifiers:
+      type: object
+      properties:
+        modules.v1:
+          type: string
+        providers.v1:
+          type: string
