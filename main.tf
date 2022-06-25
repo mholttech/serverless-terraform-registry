@@ -80,7 +80,8 @@ module "tf_registry_modules_version" {
 
 
   environment_variables = {
-    TF_REGISTRY_TABLE = module.dynamodb_table.dynamodb_table_id
+    TF_REGISTRY_TABLE  = module.dynamodb_table.dynamodb_table_id
+    TF_APIKEYS_TABLE  = module.dynamodb_table_apikeys.dynamodb_table_id
   }
 
   publish = true
@@ -95,7 +96,7 @@ module "tf_registry_modules_version" {
     dynamodb = {
       effect    = "Allow",
       actions   = ["dynamodb:*"],
-      resources = [module.dynamodb_table.dynamodb_table_arn, "${module.dynamodb_table.dynamodb_table_arn}/table/*"]
+      resources = [module.dynamodb_table.dynamodb_table_arn, "${module.dynamodb_table.dynamodb_table_arn}/table/*", module.dynamodb_table_apikeys.dynamodb_table_arn, "${module.dynamodb_table_apikeys.dynamodb_table_arn}/table/*"]
     }
   }
 

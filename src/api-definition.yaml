@@ -100,6 +100,42 @@ paths:
         contentHandling: "CONVERT_TO_TEXT"
         type: "AWS_PROXY"
 
+  /modules/{namespace}/{name}/{provider}/download:
+    get:
+      summary: Download module
+      description: |
+        This does not actually download the module tarball, but sends a link to the tarball.
+        The tarball could be hosted in another domain tha the API. Not the case here.
+        See more in https://www.terraform.io/internals/module-registry-protocol#download-source-code-for-a-specific-module-version
+      parameters:
+        - $ref: "#/components/parameters/namespace"
+        - $ref: "#/components/parameters/name"
+        - $ref: "#/components/parameters/provider"
+        - $ref: "#/components/parameters/version"
+      responses:
+        "204":
+          description: Returns the URL to download the binary
+          headers:
+            X-Terraform-Get:
+              description: URL to download the module tarball
+              schema:
+                type: string
+        "418":
+          $ref: "#/components/responses/Invalid"
+        "404":
+          $ref: "#/components/responses/NotFound"
+      x-amazon-apigateway-integration:
+        payloadFormatVersion: 2.0
+        uri:
+           arn:$${AWS::Partition}:apigateway:$${AWS::Region}:lambda:path/2015-03-31/functions/${tf_registry_modules_download}/invocations
+        responses:
+          default:
+            statusCode: "200"
+        passthroughBehavior: "when_no_match"
+        httpMethod: "POST"
+        contentHandling: "CONVERT_TO_TEXT"
+        type: "AWS_PROXY"
+
   /modules/{namespace}/{name}/{provider}/{version}/create:
     get:
       summary: Download module

@@ -46,25 +46,21 @@ exports.handler = async (event) => {
   try {
     switch (event.routeKey) {
       case "GET /modules/{namespace}/{name}/{provider}/{version}/download":
-        var parts = event.headers.authorization.split(' ');
-        if (parts.length === 2) {
-          var scheme = parts[0];
-          var credentials = parts[1];
-
-          if (/^Bearer$/i.test(scheme)) {
-            isAuthorized = await checkAPIKey(credentials)
-          }
-        } else {
-          const err = new Error("Invalid API Key");;
-          err.statusCode = 401;
-          throw err;
-        }
+        isAuthorized = await checkAPIKey(event.headers.authorization)
         if (isAuthorized === true) {
           statusCode = 204;
           headers["X-Terraform-Get"] = await downloadSourceCodeForSpecificModuleVersion(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider, event.pathParameters.version);
           body = "";
         }
-        // body = await downloadSourceCodeForSpecificModuleVersion(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider, event.pathParameters.version);
+        break;
+      case "GET /modules/{namespace}/{name}/{provider}/download":
+        isAuthorized = await checkAPIKey(event.headers.authorization)
+        if (isAuthorized === true) {
+          latestVersion = await getLatestAvailableVersionForSpecificModule(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider);
+          statusCode = 302;
+          headers["Location"] = `/modules/${latestVersion}/download`
+          body = `<a href="/modules/${latestVersion}/download">Found</a>.`;
+        }
         break;
       default:
         unimplemented(event.routeKey, event.pathParameters, event.queryStringParameters);
@@ -81,6 +77,30 @@ exports.handler = async (event) => {
 }
 
 
+
+async function getLatestAvailableVersionForSpecificModule(namespace, name, provider) {
+  try {
+    const source = `${namespace}/${name}/${provider}`;
+    const result = await tfmoduleModel.query('id').eq(source).sort("descending").limit(1).exec();
+    const count = result.length
+
+    if (count < 1) {
+      const err = "Module Not Found";
+      throw err;
+    }
+
+    // const versions = result.map(i => { return { version: i.version }; });
+
+    return `${namespace}/${name}/${provider}/${result[0].version}`
+
+  } catch (error) {
+    console.log(error);
+
+    const err = new Error(error);
+    err.statusCode = 404;
+    throw err;
+  }
+}
 
 /**
  * Get a signed URL to the S3 object with the module.

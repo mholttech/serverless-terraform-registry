@@ -5,6 +5,9 @@
 const logger = require('./helpers/logger');
 const { response, unimplemented } = require('./helpers/response');
 const { TF_REGISTRY_TABLE } = process.env;
+const { checkAPIKey } = require('./helpers/checkAPIkey');
+
+
 const dynamoose = require('dynamoose');
 dynamoose.logger.providers.set(console);
 const tfmoduleSchema = new dynamoose.Schema({
@@ -37,17 +40,18 @@ exports.handler = async (event) => {
   body = JSON.stringify(event);
   try {
     switch (event.routeKey) {
-      case "GET /.well-known/terraform.json":
-        body = JSON.stringify({
-          "modules.v1": "/modules/"
-        })
-        break;
       case "GET /modules/{namespace}/{name}/{provider}/versions":
-        body = await listAvailableVersionsForSpecificModule(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider);
+        isAuthorized = await checkAPIKey(event.headers.authorization)
+        if (isAuthorized === true) {
+          body = await listAvailableVersionsForSpecificModule(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider);
+        }
         break;
       case "GET /modules/{namespace}/{name}/{provider}/{version}/create":
-        // unimplemented("CreateModule", event.pathParameters, event.queryStringParameters, event.routeKey);
-        body = await createModuleVersion(event.pathParameters, event.queryStringParameters);
+
+        isAuthorized = await checkAPIKey(event.headers.authorization)
+        if (isAuthorized === true) {
+          body = await createModuleVersion(event.pathParameters, event.queryStringParameters);
+        }
         break;
       default:
         unimplemented(event.routeKey, event.pathParameters, event.queryStringParameters);
@@ -68,7 +72,7 @@ exports.handler = async (event) => {
 async function listAvailableVersionsForSpecificModule(namespace, name, provider) {
   try {
     const source = `${namespace}/${name}/${provider}`;
-    const result = await tfmoduleModel.query('id').eq(source).sort("descending").all().exec();
+    const result = await tfmoduleModel.query('id').eq(source).sort("ascending").all().exec();
     const count = result.length
 
     if (count < 1) {
@@ -78,8 +82,8 @@ async function listAvailableVersionsForSpecificModule(namespace, name, provider)
 
     const versions = result.map(i => { return { version: i.version }; });
 
-      return JSON.stringify({
-        modules: [{ source, versions }]
+    return JSON.stringify({
+      modules: [{ source, versions }]
     });
 
   } catch (error) {
