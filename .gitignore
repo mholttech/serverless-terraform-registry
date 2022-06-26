@@ -34,3 +34,5 @@ node_modules/
 old
 .terraform.lock.hcl
 .vscode
+
+_coverage_reports

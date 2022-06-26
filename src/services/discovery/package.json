@@ -4,10 +4,13 @@
     "winston": "^3.8.0"
   },
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest"
   },
   "jest": {
-    "verbose": true
+    "verbose": true,
+    "collectCoverage": true,
+    "coverageReporters": ["json", "html"],
+    "coverageDirectory": "_coverage_reports"
   },
   "devDependencies": {
     "aws-sdk-mock": "^5.7.0",
