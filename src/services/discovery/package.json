@@ -2,5 +2,15 @@
   "dependencies": {
     "dynamoose": "^2.8.5",
     "winston": "^3.8.0"
+  },
+  "scripts": {
+    "test": "jest --coverage"
+  },
+  "jest": {
+    "verbose": true
+  },
+  "devDependencies": {
+    "aws-sdk-mock": "^5.7.0",
+    "jest": "^28.1.1"
   }
 }

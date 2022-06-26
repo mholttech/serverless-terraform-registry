@@ -6,7 +6,6 @@ const logger = new winston.createLogger({
       timestamp: true,
       colorize: true,
     })
-  ]
-});
+  ]});
 
 module.exports = logger;

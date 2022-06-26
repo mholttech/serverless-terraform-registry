@@ -7,7 +7,7 @@ const { response, unimplemented } = require('./helpers/response');
 
 
 exports.handler = async (event) => {
-  logger.log('info', "It Works", { data: event, success: true, tags: 'event' });
+  // logger.log('info', "It Works", { data: event, success: true, tags: 'event' });
 
 
   let body;
@@ -28,7 +28,7 @@ exports.handler = async (event) => {
         unimplemented(event.routeKey, event.pathParameters, event.queryStringParameters);
     }
   } catch (err) {
-    logger.log('error', "Bad Route " + event.routeKey, { err, success: false, tags: 'error' });
+    // logger.log('error', "Bad Route " + event.routeKey, { err, success: false, tags: 'error' });
     body = err.toString();
     statusCode = err.statusCode || 500;
   }
