@@ -2,8 +2,6 @@ const event_valid = require('./event_valid.json')
 const event_invalid = require('./event_invalid.json')
 const { handler } = require('../index');
 
-function callback (error, response) { return error || response }
-
 
 describe('Testing Lambda', () => {
   beforeEach(() => {
