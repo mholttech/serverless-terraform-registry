@@ -36,3 +36,5 @@ old
 .vscode
 
 _coverage_reports
+.env
+private.auto.tfvars

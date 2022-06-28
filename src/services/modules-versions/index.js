@@ -40,15 +40,17 @@ exports.handler = async (event) => {
   body = JSON.stringify(event);
   try {
     switch (event.routeKey) {
-      case "GET /modules/{namespace}/{name}/{provider}/versions":
-        isAuthorized = await checkAPIKey(event.headers.authorization)
+      case "GET /api/v1/modules/{namespace}/{name}/{provider}/versions":
+        // isAuthorized = await checkAPIKey(event.headers.authorization)
+        isAuthorized = true
         if (isAuthorized === true) {
           body = await listAvailableVersionsForSpecificModule(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider);
         }
         break;
-      case "GET /modules/{namespace}/{name}/{provider}/{version}/create":
+      case "GET /api/v1/modules/{namespace}/{name}/{provider}/{version}/create":
 
-        isAuthorized = await checkAPIKey(event.headers.authorization)
+        // isAuthorized = await checkAPIKey(event.headers.authorization)
+        isAuthorized = true
         if (isAuthorized === true) {
           body = await createModuleVersion(event.pathParameters, event.queryStringParameters);
         }

@@ -36,7 +36,7 @@ module "dynamodb_table_apikeys" {
 module "dynamodb_table" {
   source = "terraform-aws-modules/dynamodb-table/aws"
 
-  name         = "tf_modules"
+  name         = "tf_modules_${random_pet.this.id}"
   hash_key     = "id"
   range_key    = "version"
   billing_mode = "PAY_PER_REQUEST"
@@ -198,6 +198,8 @@ module "tf_registry" {
     tf_registry_discovery        = module.tf_registry_discovery.lambda_function_arn
     tf_registry_modules_version  = module.tf_registry_modules_version.lambda_function_arn
     tf_registry_modules_download = module.tf_registry_modules_download.lambda_function_arn
+    OAUTH_AUDIENCE         = "api://serverless-terraform-registry-api"
+    OAUTH_ISSUER           = var.oauth_issuer
   })
 
   cors_configuration = {
@@ -214,10 +216,6 @@ module "tf_registry" {
   # Access logs
   default_stage_access_log_destination_arn = aws_cloudwatch_log_group.logs.arn
   default_stage_access_log_format          = "$context.identity.sourceIp - - [$context.requestTime] \"$context.httpMethod $context.routeKey $context.protocol\" $context.status $context.responseLength $context.requestId $context.integrationErrorMessage"
-
-  tags = {
-    Name = "tf_registry"
-  }
 }
 
 module "s3_bucket" {
@@ -225,9 +223,13 @@ module "s3_bucket" {
 
   bucket = "tf-registry-${random_pet.this.id}"
   acl    = "private"
+  # Allow deletion of non-empty bucket
+  force_destroy = true
+
 
   versioning = {
     enabled = true
   }
 
 }
+

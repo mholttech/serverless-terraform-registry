@@ -10,7 +10,7 @@ const { TF_REGISTRY_TABLE, TF_REGISTRY_BUCKET } = process.env;
 const dynamoose = require('dynamoose');
 
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
+AWS.config.update({ region: process.env.AWS_REGION || "us-east-1" })
 
 
 dynamoose.logger.providers.set(console);
@@ -31,10 +31,8 @@ const tfmoduleSchema = new dynamoose.Schema({
 });
 const tfmoduleModel = dynamoose.model(TF_REGISTRY_TABLE, tfmoduleSchema)
 
-
 exports.handler = async (event) => {
   logger.log('info', "It Works", { data: event, success: true, tags: 'event' });
-
 
   let body;
   let statusCode = '200';
@@ -45,21 +43,23 @@ exports.handler = async (event) => {
   body = JSON.stringify(event);
   try {
     switch (event.routeKey) {
-      case "GET /modules/{namespace}/{name}/{provider}/{version}/download":
-        isAuthorized = await checkAPIKey(event.headers.authorization)
+      case "GET /api/v1/modules/{namespace}/{name}/{provider}/{version}/download":
+        // isAuthorized = await checkAPIKey(event.headers.authorization)
+        isAuthorized = true
         if (isAuthorized === true) {
           statusCode = 204;
           headers["X-Terraform-Get"] = await downloadSourceCodeForSpecificModuleVersion(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider, event.pathParameters.version);
           body = "";
         }
         break;
-      case "GET /modules/{namespace}/{name}/{provider}/download":
-        isAuthorized = await checkAPIKey(event.headers.authorization)
+      case "GET /api/v1/modules/{namespace}/{name}/{provider}/download":
+        // isAuthorized = await checkAPIKey(event.headers.authorization)
+        isAuthorized = true
         if (isAuthorized === true) {
           latestVersion = await getLatestAvailableVersionForSpecificModule(event.pathParameters.namespace, event.pathParameters.name, event.pathParameters.provider);
           statusCode = 302;
-          headers["Location"] = `/modules/${latestVersion}/download`
-          body = `<a href="/modules/${latestVersion}/download">Found</a>.`;
+          headers["Location"] = `/api/v1/modules/${latestVersion}/download`
+          body = `<a href="/api/v1/modules/${latestVersion}/download">Found</a>.`;
         }
         break;
       default:
@@ -115,7 +115,7 @@ async function downloadSourceCodeForSpecificModuleVersion(namespace, name, provi
   try {
     const source = `${namespace}/${name}/${provider}`;
 
-
+    const s3 = new AWS.S3();
     const result = await tfmoduleModel.query('id').eq(source).where("version").eq(version).sort("descending").all().exec();
     const count = result.length
 

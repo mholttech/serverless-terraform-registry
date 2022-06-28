@@ -5,6 +5,8 @@ info:
 paths:
   /.well-known/terraform.json:
     get:
+      security:
+        - AzureAD: []
       summary: Discovery process
       description: |
         Returns a json response to implement discovery process by Terraform
@@ -32,8 +34,10 @@ paths:
 
   # TODO Create new module
 
-  /modules/{namespace}/{name}/{provider}/versions:
+  /api/v1/modules/{namespace}/{name}/{provider}/versions:
     get:
+      security:
+        - AzureAD: []
       summary: List module versions
       description: |
         Returns the available versions for a given fully-qualified module.
@@ -64,8 +68,10 @@ paths:
         contentHandling: "CONVERT_TO_TEXT"
         type: "AWS_PROXY"
 
-  /modules/{namespace}/{name}/{provider}/{version}/download:
+  /api/v1/modules/{namespace}/{name}/{provider}/{version}/download:
     get:
+      security:
+        - AzureAD: []
       summary: Download module
       description: |
         This does not actually download the module tarball, but sends a link to the tarball.
@@ -100,8 +106,10 @@ paths:
         contentHandling: "CONVERT_TO_TEXT"
         type: "AWS_PROXY"
 
-  /modules/{namespace}/{name}/{provider}/download:
+  /api/v1/modules/{namespace}/{name}/{provider}/download:
     get:
+      security:
+        - AzureAD: []
       summary: Download module
       description: |
         This does not actually download the module tarball, but sends a link to the tarball.
@@ -136,8 +144,10 @@ paths:
         contentHandling: "CONVERT_TO_TEXT"
         type: "AWS_PROXY"
 
-  /modules/{namespace}/{name}/{provider}/{version}/create:
+  /api/v1/modules/{namespace}/{name}/{provider}/{version}/create:
     get:
+      security:
+        - AzureAD: []
       summary: Download module
       description: |
         This does not actually download the module tarball, but sends a link to the tarball.
@@ -290,3 +300,14 @@ components:
           type: string
         providers.v1:
           type: string
+  securitySchemes:
+    AzureAD:
+      type: "oauth2"
+      flows: {}
+      x-amazon-apigateway-authorizer:
+        identitySource: "$request.header.Authorization"
+        jwtConfiguration:
+          audience:
+            - "${OAUTH_AUDIENCE}"
+          issuer: "${OAUTH_ISSUER}"
+        type: jwt

@@ -21,7 +21,7 @@ exports.handler = async (event) => {
     switch (event.routeKey) {
       case "GET /.well-known/terraform.json":
         body = JSON.stringify({
-          "modules.v1": "/modules/"
+          "modules.v1": "/api/v1/modules/"
         })
         break;
       default:
